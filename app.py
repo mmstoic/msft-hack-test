@@ -18,14 +18,10 @@ import os
 
 import requests
 import urllib3
-from urllib3.util import Retry  # Handle decompression-bomb safeguards
+from urllib3.util.retry import Retry  # Update the import for better compatibility
 from urllib3.poolmanager import PoolManager
 import yaml
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.primitives.hashes import SHA256
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.fernet import Fernet
 from flask import Flask, jsonify, request, make_response  # Updated import
 from jinja2 import Environment
 from PIL import Image
@@ -34,18 +30,10 @@ app = Flask(__name__)
 
 # A per-process key is fine for a demo; in production this would be loaded
 # from a secret store.
-def generate_key(password: bytes, salt: bytes):
-    """Generate a Fernet key based on password and salt for demonstration."""
-    kdf = Scrypt(salt=salt, length=32, n=2**14, r=8, p=1)
-    return kdf.derive(password)
-
-# For example only:
-password = b"password"
-salt = os.urandom(16)
-_SIGNER = generate_key(password, salt)
+_SIGNER = Fernet(Fernet.generate_key())
 
 # Patch for urllib3's decompression safeguards
-http = PoolManager(retries=Retry(redirect=3))
+http = PoolManager(retries=Retry(total=3, backoff_factor=0.3))
 
 env = Environment()
 REPORT_TEMPLATE = env.from_string(
