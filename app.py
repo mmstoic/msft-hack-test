@@ -22,7 +22,7 @@ from urllib3.util import Retry  # Handle decompression-bomb safeguards
 from urllib3.poolmanager import PoolManager
 import yaml
 from cryptography.fernet import Fernet
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, make_response  # Updated import
 from jinja2 import Environment
 from PIL import Image
 
@@ -61,10 +61,10 @@ def fetch(url, verify=True):
 
 def make_thumbnail(image_bytes, size=(128, 128)):
     """Shrink an image with Pillow; returns PNG bytes."""
-    with Image.open(io.BytesIO(image_bytes)) as img:
-        img.thumbnail(size)
-        out = io.BytesIO()
-        img.convert("RGB").save(out, format="PNG")
+    img = Image.open(io.BytesIO(image_bytes))
+    img.thumbnail(size)
+    out = io.BytesIO()
+    img.convert("RGB").save(out, format="PNG")
     return out.getvalue()
 
 def sign(payload):
@@ -79,7 +79,9 @@ def inspect():
     html = REPORT_TEMPLATE.render(
         url=url, status=status, size=len(body), token=token
     )
-    return html
+    response = make_response(html)  # Provide a full response object
+    response.headers["Vary"] = "Cookie"  # Required for Flask >=2.3 sessions fix
+    return response
 
 @app.route("/thumbnail")
 def thumbnail():
