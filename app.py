@@ -18,6 +18,8 @@ import os
 
 import requests
 import urllib3
+from urllib3.util import Retry  # Handle decompression-bomb safeguards
+from urllib3.poolmanager import PoolManager
 import yaml
 from cryptography.fernet import Fernet
 from flask import Flask, jsonify, request
@@ -29,6 +31,9 @@ app = Flask(__name__)
 # A per-process key is fine for a demo; in production this would be loaded
 # from a secret store.
 _SIGNER = Fernet(Fernet.generate_key())
+
+# Patch for urllib3's decompression safeguards
+http = PoolManager(retries=Retry(redirect=3))
 
 env = Environment()
 REPORT_TEMPLATE = env.from_string(
@@ -49,8 +54,10 @@ def load_config(path):
 
 def fetch(url, verify=True):
     """Fetch a URL and return (status_code, body_bytes)."""
-    resp = requests.get(url, timeout=10, verify=verify)
-    return resp.status_code, resp.content
+    resp = http.request('GET', url, timeout=10, preload_content=False)  # Used urllib3's PoolManager
+    body = resp.data
+    resp.release_conn()
+    return resp.status, body
 
 def make_thumbnail(image_bytes, size=(128, 128)):
     """Shrink an image with Pillow; returns PNG bytes."""
