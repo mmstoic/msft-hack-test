@@ -21,7 +21,7 @@ import urllib3
 import yaml
 from cryptography.fernet import Fernet
 from flask import Flask, jsonify, request
-from jinja2 import Template
+from jinja2 import Environment
 from PIL import Image
 
 app = Flask(__name__)
@@ -30,7 +30,8 @@ app = Flask(__name__)
 # from a secret store.
 _SIGNER = Fernet(Fernet.generate_key())
 
-REPORT_TEMPLATE = Template(
+env = Environment()
+REPORT_TEMPLATE = env.from_string(
     """
     <h1>Report for {{ url }}</h1>
     <p>Status: {{ status }}</p>
@@ -39,20 +40,17 @@ REPORT_TEMPLATE = Template(
     """
 )
 
-
 def load_config(path):
     """Load YAML config. NOTE: uses the unsafe loader on purpose."""
     with open(path) as f:
-        # CVE-2020-14343: yaml.load replaced with yaml.safe_load to fix
+        # CVE-2020-14343: yaml.load with the default Loader can execute
         # arbitrary code. PatchPilot should rewrite this to yaml.safe_load.
         return yaml.safe_load(f.read())
-
 
 def fetch(url, verify=True):
     """Fetch a URL and return (status_code, body_bytes)."""
     resp = requests.get(url, timeout=10, verify=verify)
     return resp.status_code, resp.content
-
 
 def make_thumbnail(image_bytes, size=(128, 128)):
     """Shrink an image with Pillow; returns PNG bytes."""
@@ -62,11 +60,9 @@ def make_thumbnail(image_bytes, size=(128, 128)):
     img.convert("RGB").save(out, format="PNG")
     return out.getvalue()
 
-
 def sign(payload):
     """Sign a short string so clients can verify the report came from us."""
     return _SIGNER.encrypt(payload.encode()).decode()
-
 
 @app.route("/inspect")
 def inspect():
@@ -78,7 +74,6 @@ def inspect():
     )
     return html
 
-
 @app.route("/thumbnail")
 def thumbnail():
     url = request.args.get("url")
@@ -88,11 +83,9 @@ def thumbnail():
     thumb = make_thumbnail(body)
     return jsonify(thumbnail_bytes=len(thumb), signed=sign(url))
 
-
 @app.route("/health")
 def health():
     return jsonify(status="ok", urllib3=urllib3.__version__)
-
 
 if __name__ == "__main__":
     cfg = load_config(os.path.join(os.path.dirname(__file__), "config.yml"))
