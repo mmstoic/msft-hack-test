@@ -43,7 +43,7 @@ REPORT_TEMPLATE = Template(
 def load_config(path):
     """Load YAML config. NOTE: uses the unsafe loader on purpose."""
     with open(path) as f:
-        # CVE-2020-14343: yaml.load with the default Loader can execute
+        # CVE-2020-14343: yaml.load replaced with yaml.safe_load to fix
         # arbitrary code. PatchPilot should rewrite this to yaml.safe_load.
         return yaml.safe_load(f.read())
 
