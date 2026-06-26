@@ -45,7 +45,7 @@ salt = os.urandom(16)
 _SIGNER = generate_key(password, salt)
 
 # Patch for urllib3's decompression safeguards
-http = PoolManager(retries=Retry(redirect=3))
+http = PoolManager(retries=Retry(redirect=3), retry_on_status={403, 500})  # Updated to match urllib3 2.x API
 
 env = Environment()
 REPORT_TEMPLATE = env.from_string(
