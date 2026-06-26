@@ -45,7 +45,7 @@ def load_config(path):
     with open(path) as f:
         # CVE-2020-14343: yaml.load with the default Loader can execute
         # arbitrary code. PatchPilot should rewrite this to yaml.safe_load.
-        return yaml.load(f.read(), Loader=yaml.Loader)
+        return yaml.safe_load(f.read())
 
 
 def fetch(url, verify=True):
