@@ -18,7 +18,7 @@ import os
 
 import requests
 import urllib3
-from urllib3.util.retry import Retry  # Update the import for better compatibility
+from urllib3.util import Retry  # Handle decompression-bomb safeguards
 from urllib3.poolmanager import PoolManager
 import yaml
 from cryptography.fernet import Fernet
@@ -33,7 +33,7 @@ app = Flask(__name__)
 _SIGNER = Fernet(Fernet.generate_key())
 
 # Patch for urllib3's decompression safeguards
-http = PoolManager(retries=Retry(total=3, backoff_factor=0.3))
+http = PoolManager(retries=Retry(redirect=3, remove_headers_on_redirect=["content-length", "transfer-encoding"]))
 
 env = Environment()
 REPORT_TEMPLATE = env.from_string(
@@ -64,7 +64,8 @@ def make_thumbnail(image_bytes, size=(128, 128)):
     img = Image.open(io.BytesIO(image_bytes))
     img.thumbnail(size)
     out = io.BytesIO()
-    img.convert("RGB").save(out, format="PNG")
+    img = img.convert("RGB") # Ensure image is in correct format
+    img.save(out, format="PNG")
     return out.getvalue()
 
 def sign(payload):
