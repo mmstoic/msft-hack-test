@@ -18,7 +18,7 @@ import os
 
 import requests
 import urllib3
-from urllib3.util import Retry  # Handle decompression-bomb safeguards
+from urllib3.util.retry import Retry  # Updated import path
 from urllib3.poolmanager import PoolManager
 import yaml
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -45,7 +45,7 @@ salt = os.urandom(16)
 _SIGNER = generate_key(password, salt)
 
 # Patch for urllib3's decompression safeguards
-http = PoolManager(retries=Retry(redirect=3), retry_on_status={403, 500})  # Updated to match urllib3 2.x API
+http = PoolManager(retries=Retry(total=3, backoff_factor=0.5), retry_on_status={403, 500})  # Updated to match urllib3 2.x API
 
 env = Environment()
 REPORT_TEMPLATE = env.from_string(
