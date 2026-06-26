@@ -64,7 +64,8 @@ def make_thumbnail(image_bytes, size=(128, 128)):
     img = Image.open(io.BytesIO(image_bytes))
     img.thumbnail(size)
     out = io.BytesIO()
-    img.convert("RGB").save(out, format="PNG")
+    img = img.convert("RGB") # Ensure image is in correct format
+    img.save(out, format="PNG")
     return out.getvalue()
 
 def sign(payload):
