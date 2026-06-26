@@ -61,10 +61,10 @@ def fetch(url, verify=True):
 
 def make_thumbnail(image_bytes, size=(128, 128)):
     """Shrink an image with Pillow; returns PNG bytes."""
-    img = Image.open(io.BytesIO(image_bytes))
-    img.thumbnail(size)
-    out = io.BytesIO()
-    img.convert("RGB").save(out, format="PNG")
+    with Image.open(io.BytesIO(image_bytes)) as img:
+        img.thumbnail(size)
+        out = io.BytesIO()
+        img.convert("RGB").save(out, format="PNG")
     return out.getvalue()
 
 def sign(payload):
