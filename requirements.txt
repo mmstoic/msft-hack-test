@@ -1,2 +1,19 @@
-requests==2.10.0
-pyyaml==5.3
+# Intentionally pinned to OLD, vulnerable releases so OSV flags them.
+# These are the versions PatchPilot is expected to remediate.
+#
+#   Flask 0.12.2      -> CVE-2018-1000656  (JSON DoS)
+#   Werkzeug 0.14.1   -> CVE-2023-25577    (multipart DoS)
+#   Jinja2 2.10       -> CVE-2019-10906    (sandbox escape)
+#   requests 2.19.1   -> CVE-2018-18074    (auth header leak on redirect)
+#   urllib3 1.24.1    -> CVE-2019-11324    (cert verification bypass)
+#   PyYAML 5.1        -> CVE-2020-14343    (arbitrary code execution; needs code fix)
+#   Pillow 5.4.1      -> CVE-2020-10177    (multiple image-parsing overflows)
+#   cryptography 2.3  -> CVE-2018-10903    (GCM tag forgery)
+Flask==0.12.2
+Werkzeug==0.14.1
+Jinja2==2.10
+requests==2.19.1
+urllib3==1.24.1
+PyYAML==5.1
+Pillow==5.4.1
+cryptography==2.3

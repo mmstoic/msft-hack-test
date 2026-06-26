@@ -1,2 +1,4 @@
-name: demo
+name: link-inspector
+port: 5000
+debug: false
 retries: 3
