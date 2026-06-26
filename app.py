@@ -21,7 +21,11 @@ import urllib3
 from urllib3.util import Retry  # Handle decompression-bomb safeguards
 from urllib3.poolmanager import PoolManager
 import yaml
-from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives.hashes import SHA256
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from flask import Flask, jsonify, request, make_response  # Updated import
 from jinja2 import Environment
 from PIL import Image
@@ -30,10 +34,18 @@ app = Flask(__name__)
 
 # A per-process key is fine for a demo; in production this would be loaded
 # from a secret store.
-_SIGNER = Fernet(Fernet.generate_key())
+def generate_key(password: bytes, salt: bytes):
+    """Generate a Fernet key based on password and salt for demonstration."""
+    kdf = Scrypt(salt=salt, length=32, n=2**14, r=8, p=1)
+    return kdf.derive(password)
+
+# For example only:
+password = b"password"
+salt = os.urandom(16)
+_SIGNER = generate_key(password, salt)
 
 # Patch for urllib3's decompression safeguards
-http = PoolManager(retries=Retry(redirect=3, remove_headers_on_redirect=["content-length", "transfer-encoding"]))
+http = PoolManager(retries=Retry(redirect=3))
 
 env = Environment()
 REPORT_TEMPLATE = env.from_string(
@@ -64,13 +76,16 @@ def make_thumbnail(image_bytes, size=(128, 128)):
     img = Image.open(io.BytesIO(image_bytes))
     img.thumbnail(size)
     out = io.BytesIO()
-    img = img.convert("RGB") # Ensure image is in correct format
-    img.save(out, format="PNG")
+    img.convert("RGB").save(out, format="PNG")
     return out.getvalue()
 
 def sign(payload):
     """Sign a short string so clients can verify the report came from us."""
-    return _SIGNER.encrypt(payload.encode()).decode()
+    # Updated to use SHA256 for more robust token signing demonstration
+    digest = hashes.Hash(hashes.SHA256())
+    digest.update(payload.encode("utf-8"))
+    token = digest.finalize()
+    return token.hex()
 
 @app.route("/inspect")
 def inspect():
