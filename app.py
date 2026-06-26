@@ -22,7 +22,7 @@ from urllib3.util import Retry  # Handle decompression-bomb safeguards
 from urllib3.poolmanager import PoolManager
 import yaml
 from cryptography.fernet import Fernet
-from flask import Flask, jsonify, request, make_response  # Updated import
+from flask import Flask, jsonify, request, make_response
 from jinja2 import Environment
 from PIL import Image
 
@@ -50,7 +50,7 @@ def load_config(path):
     with open(path) as f:
         # CVE-2020-14343: yaml.load with the default Loader can execute
         # arbitrary code. PatchPilot should rewrite this to yaml.safe_load.
-        return yaml.safe_load(f.read())  # Ensure safe deserialization
+        return yaml.safe_load(f.read())
 
 def fetch(url, verify=True):
     """Fetch a URL and return (status_code, body_bytes)."""
@@ -64,8 +64,7 @@ def make_thumbnail(image_bytes, size=(128, 128)):
     img = Image.open(io.BytesIO(image_bytes))
     img.thumbnail(size)
     out = io.BytesIO()
-    img = img.convert("RGB") # Ensure image is in correct format
-    img.save(out, format="PNG")
+    img.convert("RGB").save(out, format="PNG")
     return out.getvalue()
 
 def sign(payload):
